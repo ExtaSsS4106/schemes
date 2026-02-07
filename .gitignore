@@ -1,0 +1,4 @@
+/venv/
+/db.sqlite3
+/tmp/
+/src/main_app/migrations/
