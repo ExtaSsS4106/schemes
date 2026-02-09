@@ -13,3 +13,11 @@ class Schemes(models.Model):
     
     def __str__(self):
         return self.id, self.title
+    
+class Components(models.Model):
+    title = models.CharField(max_length=255, null=False)
+    ico = models.TextField(null=False)
+    max_nodes = models.IntegerField(null=True)
+    
+    def __str__(self):
+        return self.id, self.title
