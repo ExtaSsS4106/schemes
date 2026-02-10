@@ -1,5 +1,9 @@
-asgiref
-crispy-bootstrap5
-Django
-django-crispy-forms
-sqlparse
+asgiref==3.11.1
+crispy-bootstrap5==2025.6
+Django==6.0.2
+django-cors-headers==4.9.0
+django-crispy-forms==2.5
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+PyJWT==2.11.0
+sqlparse==0.5.5

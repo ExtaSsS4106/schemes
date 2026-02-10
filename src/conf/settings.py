@@ -40,9 +40,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'main_app',
+    'api',
     
     'crispy_forms',
-    'crispy_bootstrap5'
+    'crispy_bootstrap5',
+    
+    'rest_framework',
+    'rest_framework.authtoken',  # для токенов
+    'corsheaders',  # если десктоп на другом порту
 ]
 
 
@@ -58,6 +63,7 @@ LOGOUT_REDIRECT_URL = '' # <---- ДОБАВИТЬ СТРАНИЦУ ПОСЛЕ В
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -137,3 +143,18 @@ STATIC_URL = 'static/'
 LOGIN_URL = '/login/'  # или оставьте 'accounts/login/' по умолчанию
 LOGIN_REDIRECT_URL = '/home'  # куда перенаправлять после логина
 LOGOUT_REDIRECT_URL = '/'  # куда перенаправлять после логаута
+
+
+# DRF настройки
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',  # для веба
+        'rest_framework.authentication.TokenAuthentication',    # для десктопа
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
+
+# CORS для десктопного приложения
+CORS_ALLOW_ALL_ORIGINS = True  # Для разработки, в production укажите конкретные адреса
