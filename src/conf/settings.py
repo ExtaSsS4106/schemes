@@ -57,8 +57,7 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 
-LOGIN_REDIRECT_URL = '' # <---- ДОБАВИТЬ СТРАНИЦУ ПОСЛЕ РЕГИСТРАЦИИ
-LOGOUT_REDIRECT_URL = '' # <---- ДОБАВИТЬ СТРАНИЦУ ПОСЛЕ ВЫХОДА
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -141,7 +140,7 @@ STATIC_URL = 'static/'
 # CSRF_TRUSTED_ORIGINS = ["*"]
 
 LOGIN_URL = '/login/'  # или оставьте 'accounts/login/' по умолчанию
-LOGIN_REDIRECT_URL = '/home'  # куда перенаправлять после логина
+LOGIN_REDIRECT_URL = '/'  # куда перенаправлять после логина
 LOGOUT_REDIRECT_URL = '/'  # куда перенаправлять после логаута
 
 

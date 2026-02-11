@@ -15,6 +15,9 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 
 
+from main_app.models import Schemes
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @authentication_classes([]) 

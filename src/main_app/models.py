@@ -5,19 +5,18 @@ from django.contrib.auth.models import User
 
 
 class Schemes(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, null=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
-    height = models.IntegerField(null=True)
-    width = models.IntegerField(null=True)
-    components = models.JSONField(blank=True,default=list,null=True)
+    data = models.JSONField(blank=True,default=list,null=True)
+    
     
     def __str__(self):
         return self.id, self.title
     
 class Components(models.Model):
-    title = models.CharField(max_length=255, null=False)
-    ico = models.TextField(null=False)
-    max_nodes = models.IntegerField(null=True)
+    title = models.CharField(max_length=100, null=False)
+    ico = models.CharField(max_length=255, null=False)
     
     def __str__(self):
         return self.id, self.title
