@@ -2,3 +2,5 @@
 /db.sqlite3
 /tmp/
 /src/main_app/migrations/
+/src/venv/
+/src/win-venv/

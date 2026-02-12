@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroChip Designer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<!-- СТАРТОВЫЙ ЭКРАН -->
+<div class="screen active" id="start">
+    <div class="modal">
+        <div class="logo">
+            <i class="fas fa-microchip"></i>
+            <h2>MicroChip Designer</h2>
+        </div>
+        <p class="tagline">
+            Создавайте и проектируйте микрочипы с помощью нашего интуитивного инструмента
+        </p>
+        <button id="registerBtn">
+            <i class="fas fa-user-plus"></i> Регистрация
+        </button>
+        <button id="loginBtn" class="secondary">
+            <i class="fas fa-sign-in-alt"></i> Войти
+        </button>
+    </div>
+</div>
+
+<!-- РЕГИСТРАЦИЯ -->
+<div class="screen" id="register">
+    <div class="modal">
+        <div class="logo">
+            <i class="fas fa-microchip"></i>
+            <h2>Регистрация</h2>
+        </div>
+        <input id="regName" placeholder="Имя" type="text">
+        <input id="regEmail" placeholder="Email" type="email">
+        <input id="regPassword1" type="password" placeholder="Пароль">
+        <input id="regPassword2" type="password" placeholder="Пароль">
+        <p class="error" id="regError"></p>
+        <button id="doRegisterBtn">
+            <i class="fas fa-user-check"></i> Зарегистрироваться
+        </button>
+        <button id="backFromRegister" class="secondary">
+            <i class="fas fa-arrow-left"></i> Назад
+        </button>
+    </div>
+</div>
+
+<!-- ВХОД -->
+<div class="screen" id="login">
+    <div class="modal">
+        <div class="logo">
+            <i class="fas fa-microchip"></i>
+            <h2>Вход в систему</h2>
+        </div>
+        <input id="loginName" placeholder="Name" type="Name">
+        <input id="loginPassword" type="password" placeholder="Пароль">
+        <p class="error" id="loginError"></p>
+        <button id="doLoginBtn">
+            <i class="fas fa-sign-in-alt"></i> Войти
+        </button>
+        <button id="backFromLogin" class="secondary">
+            <i class="fas fa-arrow-left"></i> Назад
+        </button>
+    </div>
+</div>
+
+<!-- ПРОЕКТЫ -->
+<div class="screen" id="projects">
+    <div class="modal large">
+        <div class="projects-header">
+            <div class="header-left">
+                <i class="fas fa-microchip"></i>
+                <h2>Мои проекты</h2>
+            </div>
+            <div id="userInfo" class="user-info-display">
+                <!-- Информация о пользователе -->
+            </div>
+        </div>
+        
+        <!-- Контейнер для проектов -->
+        <div class="projects-grid" id="projectsGrid">
+            <!-- Проекты будут загружены через JavaScript -->
+        </div>
+        
+        <!-- Кнопка Выйти -->
+        <div class="logout-container">
+            <button id="logoutBtn" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Выйти
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- РЕДАКТОР МИКРОЧИПОВ -->
+<div class="screen" id="editor">
+    <div class="editor-container">
+        <!-- Панель инструментов -->
+        <div class="editor-tools">
+            <div class="tool-section components-elements">
+                <h3><i class="fas fa-shapes"></i> Компоненты</h3>
+                <button class="tool-btn component-btn" data-type="cpu">
+                    <i class="fas fa-microchip"></i> CPU
+                </button>
+                <button class="tool-btn component-btn" data-type="gpu">
+                    <i class="fas fa-gamepad"></i> GPU
+                </button>
+                <button class="tool-btn component-btn" data-type="ram">
+                    <i class="fas fa-memory"></i> RAM
+                </button>
+                <button class="tool-btn component-btn" data-type="io">
+                    <i class="fas fa-exchange-alt"></i> I/O
+                </button>
+                <button class="tool-btn component-btn" data-type="cache">
+                    <i class="fas fa-tachometer-alt"></i> Cache
+                </button>
+            </div>
+            
+            <div class="tool-section">
+                <h3><i class="fas fa-tools"></i> Инструменты</h3>
+                <button id="clearSelectionBtn" class="tool-btn">
+                    <i class="fas fa-times"></i> Снять выделение
+                </button>
+                <button id="deleteSelectedBtn" class="tool-btn">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+                <button id="connectSelectedBtn" class="tool-btn">
+                    <i class="fas fa-link"></i> Соединить
+                </button>
+                <button id="zoomInBtn" class="tool-btn">
+                    <i class="fas fa-search-plus"></i> Увеличить
+                </button>
+                <button id="zoomOutBtn" class="tool-btn">
+                    <i class="fas fa-search-minus"></i> Уменьшить
+                </button>
+            </div>
+            
+            <div class="tool-section">
+                <h3><i class="fas fa-save"></i> Проект</h3>
+                <button id="saveProjectBtn" class="tool-btn primary">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+                <button id="exportPngBtn" class="tool-btn">
+                    <i class="fas fa-download"></i> PNG
+                </button>
+                <button id="exportJsonBtn" class="tool-btn">
+                    <i class="fas fa-code"></i> JSON
+                </button>
+            </div>
+            
+            <div class="current-project-info">
+                <h3><i class="fas fa-info-circle"></i> Текущий проект</h3>
+                <div id="projectNameDisplay">Новый микрочип</div>
+                <div class="project-stats">
+                    <span>Компоненты: <span id="compCount">0</span></span>
+                    <span>Соединения: <span id="connCount">0</span></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Рабочая область -->
+        <div class="editor-workspace">
+            <div id="chipCanvasContainer" class="canvas-container">
+                <canvas id="chipCanvas"></canvas>
+            </div>
+            <div class="workspace-status">
+                <span id="workspaceStatus">Перетаскивайте компоненты и соединяйте их</span>
+                <div class="zoom-controls">
+                    <button id="zoomOutSmallBtn"><i class="fas fa-search-minus"></i></button>
+                    <span id="zoomLevel">100%</span>
+                    <button id="zoomInSmallBtn"><i class="fas fa-search-plus"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Кнопки редактора -->
+    <div class="editor-buttons">
+        <button id="backToProjectsBtn" class="secondary">
+            <i class="fas fa-arrow-left"></i> К проектам
+        </button>
+        <button id="saveChipBtn">
+            <i class="fas fa-save"></i> Сохранить микрочип
+        </button>
+    </div>
+</div>
+
+<!-- Подключаем Fabric.js и наши скрипты -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="script.js"></script>
+<script type="text/javascript" src="/eel.js"></script>
+</body>
+</html>
