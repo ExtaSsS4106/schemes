@@ -15,13 +15,21 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 
 
-from main_app.models import Schemes
+from main_app.models import Schemes, Components
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @authentication_classes([]) 
+@csrf_exempt
 def login_api(request):
+    """
+    {
+        "username": "your_name",
+        "password": "your_passwd"
+    }
+    """
+    print("DATA",request.data['username'], request.data['password'])
     user = get_object_or_404(User, username=request.data['username'])
     serializer = UserSerializer(instance=user)
     if not user.check_password(request.data['password']):
@@ -52,9 +60,47 @@ def logout_api(request):
         return Response({'detail': 'Выполнен выход'})
         
 
-#TEST
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def test_token(request):
-    return Response({"detail": f"Welcome to TEST_TOKEN {format(request.user.username)}, {format(request.user.email)}"})
+def get_schemas(request):
+    us_projects = Schemes.objects.filter(user=request.auth.user.id)
+    list_projects = []
+    for p in us_projects:
+        list_projects.append({"id":p.id, "title":p.title})
+    return Response({"list_projects": list_projects})
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_schema_data(request):
+    data = Schemes.objects.get(user=request.auth.user.id, id=request.data['schema_id'])
+    return Response({"list_projects": data.data})
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_components(request):
+    components = Components.objects.all()
+    data = []
+    for comp in components:
+        data.append({
+            'id': comp.id,
+            'name': comp.title,
+            'ico': comp.ico,
+        })
+    return Response(data)
+
+"""@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_components(request):
+    components = Components.objects.all()
+    data = []
+    for comp in components:
+        data.append({
+            'id': comp.id,
+            'name': comp.title,
+            'ico': comp.ico,
+        })
+    return Response(data)"""

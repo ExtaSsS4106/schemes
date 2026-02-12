@@ -1,14 +1,76 @@
 {% extends "registration/form.html" %}
-{% block title %}Sign up{% endblock %}
+{% block title %}Register{% endblock %} 
 {% load crispy_forms_tags %} 
 {% block formtype %}
-  <h1 class="form-title">Sign up</h1>
+  <h1 class="form-title">Register</h1>
 {% endblock formtype %}
 {% block content %}
 <form method="post">
   
-  {% csrf_token %}{{form|crispy}}
-  <p>Have an account? Login <a href="/login">Here</a>!</p>
-  <button type="submit" class="btn btn-success custom-btn">Sign up</button>
+  {% csrf_token %}
+  
+  <!-- Экран регистрации -->
+  <div class="screen active" id="register">
+    <div class="modal">
+        <div class="logo">
+            <i class="fas fa-microchip"></i>
+            <h2>Регистрация</h2>
+        </div>
+        
+        <input id="regName" 
+               name="username" 
+               placeholder="Имя пользователя" 
+               type="text" 
+               value="{{ form.username.value|default:'' }}"
+               required>
+        {% if form.username.errors %}
+            <p class="error">{{ form.username.errors.0 }}</p>
+        {% endif %}
+        
+        <input id="regEmail" 
+               name="email" 
+               placeholder="Email" 
+               type="email" 
+               value="{{ form.email.value|default:'' }}"
+               required>
+        {% if form.email.errors %}
+            <p class="error">{{ form.email.errors.0 }}</p>
+        {% endif %}
+        
+        <input id="regPassword" 
+               name="password1" 
+               type="password" 
+               placeholder="Пароль" 
+               required>
+        <small class="help-text">
+            Пароль должен содержать минимум 8 символов и не быть слишком простым
+        </small>
+        {% if form.password1.errors %}
+            <p class="error">{{ form.password1.errors.0 }}</p>
+        {% endif %}
+        
+        <input id="regPassword2" 
+               name="password2" 
+               type="password" 
+               placeholder="Подтвердите пароль" 
+               required>
+        {% if form.password2.errors %}
+            <p class="error">{{ form.password2.errors.0 }}</p>
+        {% endif %}
+        
+        {% if form.non_field_errors %}
+            <p class="error" id="regError">{{ form.non_field_errors.0 }}</p>
+        {% endif %}
+        
+        <button type="submit" id="doRegisterBtn">
+            <i class="fas fa-user-check"></i> Зарегистрироваться
+        </button>
+        
+        <button type="button" id="backFromRegister" class="secondary" onclick="window.location.href='/'">
+            <i class="fas fa-arrow-left"></i> Назад
+        </button>
+    </div>
+  </div>
+  
 </form>
 {% endblock %}

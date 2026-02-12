@@ -7,8 +7,33 @@
 {% block content %}
 <form method="post">
   
-  {% csrf_token %}{{form|crispy}}
-  <p>Don't have an account? Create one <a href="/sign-up">Here</a>!</p>
-  <button type="submit" class="btn btn-success custom-btn">Login</button>
+  {% csrf_token %}
+  <div class="screen active" id="login">
+    <div class="modal">
+        <div class="logo">
+            <i class="fas fa-microchip"></i>
+            <h2>Вход в систему</h2>
+        </div>
+        
+        <!-- Используем поля из формы Django, но с вашими классами -->
+        {{ form.username|as_crispy_field }}
+        {{ form.password|as_crispy_field }}
+        
+        {% if form.errors %}
+            <p class="error" id="loginError">
+                Неверное имя пользователя или пароль
+            </p>
+        {% endif %}
+        
+        <button type="submit" id="doLoginBtn">
+            <i class="fas fa-sign-in-alt"></i> Войти
+        </button>
+        
+        <button type="button" id="backFromLogin" class="secondary" onclick="window.location.href='/'">
+            <i class="fas fa-arrow-left"></i> Назад
+        </button>
+    </div>
+  </div>
+  
 </form>
 {% endblock %}

@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MicroChip Designer — Редактор</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div class="screen active" id="editor">
+    <div class="editor-container">
+        <!-- Панель инструментов -->
+        <div class="editor-tools">
+            <div class="tool-section">
+                <h3><i class="fas fa-shapes"></i> Компоненты</h3>
+                {% if components %}
+                    {% for component in components %}
+                    <button class="tool-btn component-btn" data-type="{{ component.id }}" data-ico="{{ component.ico }}" data-title="{{ component.title }}">
+                        <img src="{{ component.ico }}" alt="{{ component.title }}" style="width: 20px; height: 20px; margin-right: 8px;">
+                        {{ component.title }}
+                    </button>                 
+                    {% endfor %}
+                {% else %}
+                {% endif %}
+
+            </div>
+            
+            <div class="tool-section">
+                <h3><i class="fas fa-tools"></i> Инструменты</h3>
+                <button id="clearSelectionBtn" class="tool-btn">
+                    <i class="fas fa-times"></i> Снять выделение
+                </button>
+                <button id="deleteSelectedBtn" class="tool-btn">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+                <button id="connectSelectedBtn" class="tool-btn">
+                    <i class="fas fa-link"></i> Соединить
+                </button>
+                <button id="zoomInBtn" class="tool-btn">
+                    <i class="fas fa-search-plus"></i> Увеличить
+                </button>
+                <button id="zoomOutBtn" class="tool-btn">
+                    <i class="fas fa-search-minus"></i> Уменьшить
+                </button>
+            </div>
+            
+            <div class="tool-section">
+                <h3><i class="fas fa-save"></i> Проект</h3>
+                <button id="saveProjectBtn" class="tool-btn primary">
+                    <i class="fas fa-save"></i> Сохранить
+                </button>
+                <button id="exportPngBtn" class="tool-btn">
+                    <i class="fas fa-download"></i> PNG
+                </button>
+                <button id="exportJsonBtn" class="tool-btn">
+                    <i class="fas fa-code"></i> JSON
+                </button>
+            </div>
+            
+            <div class="current-project-info">
+                <h3><i class="fas fa-info-circle"></i> Текущий проект</h3>
+                <div id="projectNameDisplay">Новый микрочип</div>
+                <div class="project-stats">
+                    <span>Компоненты: <span id="compCount">0</span></span>
+                    <span>Соединения: <span id="connCount">0</span></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Рабочая область -->
+        <div class="editor-workspace">
+            <div id="chipCanvasContainer" class="canvas-container">
+                <canvas id="chipCanvas"></canvas>
+            </div>
+            <div class="workspace-status">
+                <span id="workspaceStatus">Перетаскивайте компоненты и соединяйте их</span>
+                <div class="zoom-controls">
+                    <button id="zoomOutSmallBtn"><i class="fas fa-search-minus"></i></button>
+                    <span id="zoomLevel">100%</span>
+                    <button id="zoomInSmallBtn"><i class="fas fa-search-plus"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Кнопки редактора -->
+    <div class="editor-buttons">
+        <button id="backToProjectsBtn" class="secondary">
+            <i class="fas fa-arrow-left"></i> К проектам
+        </button>
+        <button id="saveChipBtn">
+            <i class="fas fa-save"></i> Сохранить микрочип
+        </button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="{% static 'editor.js' %}"></script>
+</body>
+</html>

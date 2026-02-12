@@ -7,13 +7,22 @@ from .models import Schemes, Components
 from django.http import JsonResponse, HttpResponse
 import json
 # Create your views here.
-@login_required
+
 def index(request):
-    
-    schema_id = 1 # ДЛЯ ТЕСТА
-    schema = Schemes.objects.get(id=schema_id)
+    return render(request, "main/start.html")
+
+@login_required
+def home(request):
+    schemas = Schemes.objects.filter(user=request.user)
+    return render(request, "main/project.html", {'schemas':schemas})
+
+@login_required
+def work_table(request):
+    project_id = request.GET.get('project_id')
+    schema = Schemes.objects.get(id=project_id, user=request.user)
     components = Components.objects.all()
-    return render(request, "main/dropAndDraw.html", {'schema':schema, 'components': components})
+    return render(request, "main/editor.html", {"schema": schema, "components":components})
+
 
 
 @login_required
