@@ -16,12 +16,12 @@ data-title="{{schema.title}}"
     <div class="editor-container">
         <!-- Панель инструментов -->
         <div class="editor-tools">
-            <div class="tool-section">
+            <div class="tool-section components-elements">
                 <h3><i class="fas fa-shapes"></i> Компоненты</h3>
                 {% if components %}
                     {% for component in components %}
-                    <button class="tool-btn component-btn" data-type="{{ component.id }}" data-ico="{{ component.ico }}" data-title="{{ component.title }}">
-                        <img src="{{ component.ico }}" alt="{{ component.title }}" style="width: 20px; height: 20px; margin-right: 8px;">
+                    <button class="tool-btn component-btn" data-type="{{ component.id }}" data-ico="{{ component.ico.url }}" data-title="{{ component.title }}">
+                        <img src="{{ component.ico.url }}" alt="{{ component.title }}" style="width: 20px; height: 20px; margin-right: 8px;">
                         {{ component.title }}
                     </button>                 
                     {% endfor %}

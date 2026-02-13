@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-
+import json
 
 from main_app.models import Schemes, Components
 
@@ -68,6 +68,7 @@ def get_schemas(request):
     list_projects = []
     for p in us_projects:
         list_projects.append({"id":p.id, "title":p.title})
+    print(list_projects)
     return Response({"list_projects": list_projects})
 
 @api_view(['GET'])
@@ -75,7 +76,7 @@ def get_schemas(request):
 @permission_classes([IsAuthenticated])
 def get_schema_data(request):
     data = Schemes.objects.get(user=request.auth.user.id, id=request.data['schema_id'])
-    return Response({"list_projects": data.data})
+    return Response({data.data})
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -86,21 +87,60 @@ def get_components(request):
     for comp in components:
         data.append({
             'id': comp.id,
-            'name': comp.title,
-            'ico': comp.ico,
+            'title': comp.title,
+            'ico': comp.ico.url,
         })
     return Response(data)
 
-"""@api_view(['POST'])
+@api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_components(request):
-    components = Components.objects.all()
-    data = []
-    for comp in components:
-        data.append({
-            'id': comp.id,
-            'name': comp.title,
-            'ico': comp.ico,
-        })
-    return Response(data)"""
+def save_schema(request):
+        try:
+            user = request.user
+            data = json.loads(request.body)
+            print(data)
+            schema_id = data.get('id')
+            schema_title = data.get('name')
+            schema_dump = data  
+            print(f"""
+                  {schema_id}
+                  {schema_title}
+                  {schema_dump}
+                  """)
+            dump_json = json.dumps(schema_dump)
+ 
+            if schema_id:
+                try:
+                    schema = Schemes.objects.get(id=schema_id, user=user)
+                    schema.id = schema_id
+                    schema.title = schema_title
+                    schema.data = dump_json  
+                    schema.save()
+                except Schemes.DoesNotExist:
+                    schema = Schemes.objects.create(
+                        id = schema_id,
+                        user=user,
+                        title=schema_title,
+                        data=dump_json
+                    )
+            else:
+                schema = Schemes.objects.create(
+                    user=user,
+                    title=schema_title,
+                    data=dump_json
+                )
+            
+            return Response({
+                'status': 'success',
+                'schema_id': schema.id,
+                'message': 'Схема сохранена'
+            })
+            
+        except Exception as e:
+            print(f"Error saving schema: {e}")
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+    

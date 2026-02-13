@@ -16,7 +16,7 @@ class Schemes(models.Model):
     
 class Components(models.Model):
     title = models.CharField(max_length=100, null=False)
-    ico = models.CharField(max_length=255, null=False)
+    ico = models.ImageField(upload_to='components/')
     
     def __str__(self):
         return self.id, self.title

@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from .import views 
+from django.conf.urls.static import static
+from django.conf import settings
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -26,4 +28,4 @@ urlpatterns = [
     path('logout', views.logout_view, name='logout'),
     path('get_schema/<int:schema_id>/', views.get_schema, name='get_schema'),
     path('save_schema/', views.save_schema, name='save_schema'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

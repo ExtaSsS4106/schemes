@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saveProjectBtn) saveProjectBtn.addEventListener('click', saveChipProject);
     
     const exportPngBtn = document.getElementById('exportPngBtn');
-    if (exportPngBtn) exportPngBtn.addEventListener('click', takeScreenshot);
+    if (exportPngBtn) exportPngBtn.addEventListener('click', exportAsPNG);
     
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     if (exportJsonBtn) exportJsonBtn.addEventListener('click', exportAsJSON);
@@ -241,6 +241,7 @@ function addChipComponent(id, ico, title) {
         const scaleY = 60 / img.height;
         
         img.set({
+            crossOrigin: 'anonymous',
             left: left,
             top: top,
             scaleX: scaleX,
@@ -260,6 +261,7 @@ function addChipComponent(id, ico, title) {
             cornerSize: 8,
             transparentCorners: false
         });
+        
         
         img.on('moving', function() {
             constrainObject(img);
@@ -422,11 +424,7 @@ function calculateOrthogonalPoints(p1, p2) {
 }
 
 function getComponentCenter(obj) {
-    const bounds = obj.getBoundingRect();
-    return {
-        x: bounds.left + bounds.width / 2,
-        y: bounds.top + bounds.height / 2
-    };
+    return obj.getCenterPoint();
 }
 
 function updateConnectionsForObject(obj) {
@@ -440,7 +438,7 @@ function updateConnectionsForObject(obj) {
             const points = calculateOrthogonalPoints(center1, center2);
             
             conn.line.set({
-                points: points.map(p => new fabric.Point(p.x, p.y))
+                points: points
             });
             conn.line.setCoords();
             conn.points = points;
@@ -720,7 +718,7 @@ async function loadChipProject(projectId) {
         
         chipCanvas.renderAll();
         
-        showNotification('✅ Проект загружен');
+        showNotification('Проект загружен');
         updateEditorStatus(`Проект "${project.name}" загружен`);
         
     } catch (error) {
@@ -995,3 +993,25 @@ function takeScreenshot() {
     
     updateEditorStatus('Экспортировано как PNG');
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
