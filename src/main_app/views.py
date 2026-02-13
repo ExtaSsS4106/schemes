@@ -39,13 +39,17 @@ def save_schema(request):
         try:
             user = request.user
             data = json.loads(request.body)
-            
+            print(data)
             schema_id = data.get('id')
             schema_title = data.get('name')
             schema_dump = data  
-            
+            print(f"""
+                  {schema_id}
+                  {schema_title}
+                  {schema_dump}
+                  """)
             dump_json = json.dumps(schema_dump)
-            
+ 
             if schema_id:
                 try:
                     schema = Schemes.objects.get(id=schema_id, user=user)

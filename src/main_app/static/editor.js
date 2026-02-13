@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saveProjectBtn) saveProjectBtn.addEventListener('click', saveChipProject);
     
     const exportPngBtn = document.getElementById('exportPngBtn');
-    if (exportPngBtn) exportPngBtn.addEventListener('click', exportAsPNG);
+    if (exportPngBtn) exportPngBtn.addEventListener('click', takeScreenshot);
     
     const exportJsonBtn = document.getElementById('exportJsonBtn');
     if (exportJsonBtn) exportJsonBtn.addEventListener('click', exportAsJSON);
@@ -447,7 +447,7 @@ function applyZoom() {
 
 // ===== СОХРАНЕНИЕ =====
 
-function saveChipProject() {
+async function saveChipProject() {
     if (!chipCanvas) return;
     
     const components = chipCanvas.getObjects()
@@ -480,9 +480,22 @@ function saveChipProject() {
     };
     
     console.log('Project saved:', projectData);
-    showNotification('Проект сохранен в консоль (демо-режим)');
+    try{
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const response = await fetch('/save_schema/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(projectData)
+        });
+        showNotification('Проект сохранен');
+    }catch{
+        showNotification('Ошибка сохранения');
+    }
     
-    // TODO: Добавить отправку на сервер
+    
 }
 
 // ===== ЭКСПОРТ =====
@@ -632,4 +645,27 @@ function showNotification(message, type = 'success') {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+
+
+
+// Создание скрина 
+
+
+function takeScreenshot() {
+    
+    const link = document.createElement('a');
+    const projectName = currentProjectData?.name || 'microchip_design';
+    link.download = `${projectName.replace(/\s+/g, '_')}.png`;
+    link.href = chipCanvas.toDataURL({
+        format: 'png',
+        quality: 1,
+        multiplier: 2
+    });
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    updateEditorStatus('Экспортировано как PNG');
 }

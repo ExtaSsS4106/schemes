@@ -25,5 +25,5 @@ urlpatterns = [
     path('sign-up', views.sign_up, name='sign_up'),
     path('logout', views.logout_view, name='logout'),
     path('get_schema/<int:schema_id>/', views.get_schema, name='get_schema'),
-    path('save_schema', views.save_schema, name='save_schema'),
+    path('save_schema/', views.save_schema, name='save_schema'),
 ]
