@@ -93,7 +93,7 @@ function initChipEditor() {
     
     const container = document.getElementById('chipCanvasContainer');
     if (!container) {
-        console.error('Canvas container not found!');
+        console.error('Canvas container not found');
         return;
     }
     
@@ -101,33 +101,43 @@ function initChipEditor() {
         chipCanvas = new fabric.Canvas('chipCanvas', {
             width: container.clientWidth,
             height: container.clientHeight,
-            backgroundColor: '#fafafa',
-            selectionColor: 'rgba(102, 126, 234, 0.33)',
+            backgroundColor: '#f8f8f8',
+            selectionColor: 'rgba(102, 126, 234, 0.3)',
             selectionBorderColor: '#667eea',
             selectionLineWidth: 2
         });
         
         setupCanvasEvents();
         updateCanvasSize();
-        
         window.addEventListener('resize', updateCanvasSize);
     }
     
-    // Новый проект
-    chipCanvas.clear();
-    chipConnections = [];
-    currentProjectData = {
-        id: currentProjectId || Date.now().toString(),
-        name: document.getElementById('projectNameDisplay')?.textContent || 'Новый проект',
-        date: new Date().toISOString(),
-        components: [],
-        connections: []
-    };
+    // Получаем ID проекта из URL или data-атрибута
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project_id');
     
-    updateComponentCount();
-    updateConnectionCount();
-    updateEditorStatus('Готов к работе');
+    if (projectId) {
+        currentProjectId = projectId;
+        loadChipProject(projectId);
+    } else {
+        // Новый проект
+        chipCanvas.clear();
+        chipConnections = [];
+        currentProjectData = {
+            id: Date.now().toString(),
+            name: `Микрочип ${new Date().toLocaleDateString('ru-RU')}`,
+            components: [],
+            connections: [],
+            zoom: 1
+        };
+        const nameDisplay = document.getElementById('projectNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = currentProjectData.name;
+        updateComponentCount();
+        updateConnectionCount();
+        updateEditorStatus('Новый проект');
+    }
 }
+
 
 function setupCanvasEvents() {
     if (!chipCanvas) return;
@@ -497,6 +507,236 @@ async function saveChipProject() {
     
     
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ===== ЗАГРУЗКА ПРОЕКТА ИЗ БД =====
+async function loadChipProject(projectId) {
+    if (!chipCanvas) {
+        console.error('Canvas not initialized');
+        return;
+    }
+    
+    showNotification('Загрузка проекта...', 'info');
+    
+    try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        
+        const response = await fetch(`/get_schema/${projectId}/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки проекта');
+        }
+        
+        const result = await response.json();
+        console.log('Loaded project:', result);
+        
+        // Очищаем canvas
+        chipCanvas.clear();
+        chipConnections = [];
+        
+        // Получаем данные проекта (result.data или сам result)
+        const project = result.data || result;
+        
+        // Обновляем название
+        const nameDisplay = document.getElementById('projectNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = project.name || 'Без названия';
+        
+        // Сохраняем ID проекта
+        currentProjectId = project.id;
+        currentProjectData = project;
+        
+        // Карта для соответствия старых и новых ID компонентов
+        const componentMap = new Map();
+        
+        // Загружаем компоненты
+        if (project.components && Array.isArray(project.components)) {
+            const loadPromises = project.components.map(async (compData) => {
+                try {
+                    // Создаем компонент из данных
+                    const component = await createComponentFromData(compData);
+                    
+                    // Сохраняем в карту
+                    componentMap.set(compData.id, component);
+                    
+                    // Добавляем на canvas
+                    chipCanvas.add(component);
+                    
+                    return component;
+                    
+                } catch (error) {
+                    console.error('Error loading component:', error, compData);
+                    return null;
+                }
+            });
+            
+            await Promise.all(loadPromises);
+        }
+        
+        // Загружаем соединения
+        if (project.connections && Array.isArray(project.connections)) {
+            project.connections.forEach(connData => {
+                const obj1 = componentMap.get(connData.fromId);
+                const obj2 = componentMap.get(connData.toId);
+                
+                if (obj1 && obj2) {
+                    createConnection(obj1, obj2);
+                } else {
+                    console.warn('Connection objects not found:', connData);
+                }
+            });
+        }
+        
+        // Восстанавливаем масштаб
+        if (project.zoom) {
+            zoomLevel = project.zoom;
+            applyZoom();
+        }
+        
+        // Обновляем счетчики
+        updateComponentCount();
+        updateConnectionCount();
+        
+        chipCanvas.renderAll();
+        
+        showNotification('✅ Проект загружен');
+        updateEditorStatus(`Проект "${project.name}" загружен`);
+        
+    } catch (error) {
+        console.error('Error loading project:', error);
+        showNotification('❌ Ошибка загрузки проекта', 'error');
+    }
+}
+
+
+function createComponentFromData(data) {
+    return new Promise((resolve, reject) => {
+        if (!data.ico) {
+            console.warn('Component has no ico:', data);
+            reject(new Error('No image URL'));
+            return;
+        }
+        
+        fabric.Image.fromURL(data.ico, function(img) {
+            try {
+                // Вычисляем масштаб
+                const scaleX = data.scaleX || (60 / img.width);
+                const scaleY = data.scaleY || (60 / img.height);
+                
+                img.set({
+                    left: data.left || 100,
+                    top: data.top || 100,
+                    scaleX: scaleX,
+                    scaleY: scaleY,
+                    rx: 5,
+                    ry: 5,
+                    id: data.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    componentId: data.componentId,
+                    title: data.title,
+                    ico: data.ico,
+                    componentType: 'component',
+                    hasControls: true,
+                    hasBorders: true,
+                    lockRotation: true,
+                    borderColor: '#667eea',
+                    cornerColor: '#667eea',
+                    cornerSize: 8,
+                    transparentCorners: false
+                });
+                
+                // Добавляем обработчики
+                img.on('moving', function() {
+                    constrainObject(img);
+                    updateConnectionsForObject(img);
+                });
+                
+                img.on('scaling', function() {
+                    constrainObject(img);
+                    updateConnectionsForObject(img);
+                });
+                
+                resolve(img);
+                
+            } catch (error) {
+                console.error('Error setting image properties:', error);
+                reject(error);
+            }
+            
+        }, function(error) {
+            console.error('Error loading image:', error, data.ico);
+            reject(error);
+            
+        }, {
+            crossOrigin: 'anonymous'
+        });
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ===== ЭКСПОРТ =====
 

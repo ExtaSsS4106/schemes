@@ -30,9 +30,15 @@ def work_table(request):
 def get_schema(request, schema_id):
     user = request.user
     schema = get_object_or_404(Schemes, user=user, id=schema_id)
-    project_data = json.loads(schema.data)
-    return JsonResponse({'status': 'success',"data":project_data, "schema": schema})
-
+    if isinstance(schema.data, str):
+        project_data = json.loads(schema.data)
+    else:
+        project_data = schema.data
+    
+    return JsonResponse({
+        'status': 'success',
+        'data': project_data
+    })
 @login_required
 def save_schema(request):
     if request.method == 'POST':
