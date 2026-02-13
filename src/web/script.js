@@ -1,3 +1,5 @@
+
+
 // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
 let currentUser = null;
 let chipCanvas = null;
@@ -5,9 +7,36 @@ let chipConnections = [];
 let currentProjectData = null;
 let zoomLevel = 1;
 let currentProjectIndex = -1;
+let currentProjectId = null;
+let projectName = null;
 
 // ===== ДОБАВЛЯЕМ ЭТУ СТРОЧКУ ДЛЯ ОТЛАДКИ =====
 console.log('Script loaded! Current user:', currentUser);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ===== ОСНОВНЫЕ ФУНКЦИИ =====
 
@@ -74,6 +103,39 @@ function showNotification(message, type = 'success') {
         notification.remove();
     }, 3000);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ===== РЕГИСТРАЦИЯ И АВТОРИЗАЦИЯ =====
 
@@ -155,6 +217,39 @@ function logout() {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ===== УПРАВЛЕНИЕ ПРОЕКТАМИ =====
 
 function showEmptyProjects(grid) {
@@ -178,6 +273,34 @@ function showEmptyProjects(grid) {
         createBtn.addEventListener('click', createNewProject);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 async function loadProjects() {
     const grid = document.getElementById('projectsGrid');
@@ -306,16 +429,56 @@ function renameProject(index) {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ===== РЕДАКТОР МИКРОЧИПОВ =====
 
 function initChipEditor() {
     console.log('Initializing chip editor');
+    
+    const container = document.getElementById('chipCanvasContainer');
+    if (!container) {
+        console.error('Canvas container not found');
+        return;
+    }
+    
     if (!chipCanvas) {
-        const container = document.getElementById('chipCanvasContainer');
         chipCanvas = new fabric.Canvas('chipCanvas', {
             width: container.clientWidth,
             height: container.clientHeight,
-            backgroundColor: '#0f172a',
+            backgroundColor: '#ffffff',
             selectionColor: 'rgba(102, 126, 234, 0.3)',
             selectionBorderColor: '#667eea',
             selectionLineWidth: 2
@@ -323,32 +486,30 @@ function initChipEditor() {
         
         setupCanvasEvents();
         updateCanvasSize();
-        
-        // Обработчик изменения размера окна
         window.addEventListener('resize', updateCanvasSize);
     }
     
-    // Загружаем проект если есть индекс
-    if (currentProjectIndex >= 0) {
-        loadChipProject(currentProjectIndex);
+    // Загружаем проект если есть данные
+    if (currentProjectData) {
+        loadChipProject(currentProjectData);
     } else {
         // Новый проект
         chipCanvas.clear();
         chipConnections = [];
         currentProjectData = {
             name: `Микрочип ${new Date().toLocaleDateString('ru-RU')}`,
-            date: new Date().toISOString(),
             components: [],
-            connections: []
+            connections: [],
+            zoom: 1
         };
-        document.getElementById('projectNameDisplay').textContent = currentProjectData.name;
+        const nameDisplay = document.getElementById('projectNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = currentProjectData.name;
         updateComponentCount();
         updateConnectionCount();
     }
     
     updateEditorStatus('Готов к работе');
 }
-
 function setupCanvasEvents() {
     // Обновление соединений при перемещении
     chipCanvas.on('object:moving', function(e) {
@@ -395,23 +556,47 @@ function updateCanvasSize() {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function addChipComponent(id, ico, title) {
+    if (!chipCanvas) {
+        console.error('Canvas not initialized');
+        return;
+    }
     
     const left = 100 + Math.random() * 400;
     const top = 100 + Math.random() * 200;
     
     fabric.Image.fromURL(ico, function(img) {
-
+        // Создаем уникальный ID для компонента
+        const componentId = 'comp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        // Масштабируем изображение
+        const scaleX = 60 / img.width;
+        const scaleY = 60 / img.height;
+        
         img.set({
             left: left,
             top: top,
-
-            scaleX: 60 / img.width,
-            scaleY: 60 / img.height,
+            scaleX: scaleX,
+            scaleY: scaleY,
             rx: 5,
             ry: 5,
-            id: 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-            componentId: id,
+            id: componentId,
+            componentId: id,  // ID из базы данных
             title: title,
             ico: ico,
             componentType: 'component',
@@ -419,10 +604,19 @@ function addChipComponent(id, ico, title) {
             hasBorders: true,
             lockRotation: true,
             borderColor: '#667eea',
-            cornerColor: '#667eea'
+            cornerColor: '#667eea',
+            cornerSize: 8,
+            transparentCorners: false
         });
-
         
+        // Добавляем ограничение перемещения
+        img.on('moving', function() {
+            constrainObject(img);
+        });
+        
+        img.on('scaling', function() {
+            constrainObject(img);
+        });
         
         chipCanvas.add(img);
         chipCanvas.setActiveObject(img);
@@ -430,21 +624,68 @@ function addChipComponent(id, ico, title) {
         
         updateEditorStatus(`Добавлен ${title}`);
         updateComponentCount();
+        
+        console.log('Component added:', {
+            id: componentId,
+            title: title,
+            position: {left, top}
+        });
+        
+    }, function(error) {
+        console.error('Error loading image:', error);
+        showNotification('Ошибка загрузки изображения компонента', 'error');
+    }, {
+        crossOrigin: 'anonymous'
     });
 }
 
+// Ограничение перемещения за пределы canvas
+function constrainObject(obj) {
+    if (!chipCanvas) return;
+    
+    const canvasWidth = chipCanvas.getWidth();
+    const canvasHeight = chipCanvas.getHeight();
+    const objWidth = obj.getScaledWidth();
+    const objHeight = obj.getScaledHeight();
+    
+    if (obj.left < 0) obj.set('left', 0);
+    if (obj.top < 0) obj.set('top', 0);
+    if (obj.left + objWidth > canvasWidth) {
+        obj.set('left', canvasWidth - objWidth);
+    }
+    if (obj.top + objHeight > canvasHeight) {
+        obj.set('top', canvasHeight - objHeight);
+    }
+    obj.setCoords();
+}
+
+// ===== СОЕДИНЕНИЯ С ПРЯМЫМИ УГЛАМИ =====
+
 function connectSelected() {
+    if (!chipCanvas) return;
+    
     const activeObjects = chipCanvas.getActiveObjects();
     
     if (activeObjects.length === 2) {
         const obj1 = activeObjects[0];
         const obj2 = activeObjects[1];
         
+        // Проверяем, не соединены ли уже
+        const alreadyConnected = chipConnections.some(conn => 
+            (conn.obj1 === obj1 && conn.obj2 === obj2) || 
+            (conn.obj1 === obj2 && conn.obj2 === obj1)
+        );
+        
+        if (alreadyConnected) {
+            updateEditorStatus('Компоненты уже соединены');
+            return;
+        }
+        
         if (obj1.componentType && obj2.componentType) {
             createConnection(obj1, obj2);
             updateEditorStatus('Компоненты соединены');
         } else {
-            updateEditorStatus('Выберите два компонента микрочипа');
+            updateEditorStatus('Выберите два компонента');
         }
     } else {
         updateEditorStatus('Выберите два компонента для соединения');
@@ -452,24 +693,33 @@ function connectSelected() {
 }
 
 function createConnection(obj1, obj2) {
+    if (!chipCanvas) return;
+    
     const center1 = getComponentCenter(obj1);
     const center2 = getComponentCenter(obj2);
     
-    const line = new fabric.Line([
-        center1.x, center1.y,
-        center2.x, center2.y
-    ], {
-        stroke: '#94a3b8',
-        strokeWidth: 3,
+    const points = calculateOrthogonalPoints(center1, center2);
+    
+    const line = new fabric.Polyline(points, {
+        stroke: '#2563eb',
+        strokeWidth: 2.5,
         fill: '',
         selectable: false,
         evented: false,
         hasControls: false,
         hasBorders: false,
         class: 'connection-line',
-        connectedObjects: [obj1, obj2],
-        id: `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        id: `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        strokeLineCap: 'round',
+        strokeLineJoin: 'round',
+        objectCaching: false,
+        perPixelTargetFind: false
     });
+    
+    // Сохраняем связанные объекты
+    line.connectedObjects = [obj1, obj2];
+    line.obj1Id = obj1.id;
+    line.obj2Id = obj2.id;
     
     chipCanvas.add(line);
     chipCanvas.sendToBack(line);
@@ -477,11 +727,70 @@ function createConnection(obj1, obj2) {
     chipConnections.push({
         line: line,
         obj1: obj1,
-        obj2: obj2
+        obj2: obj2,
+        points: points
     });
     
     updateConnectionCount();
     chipCanvas.renderAll();
+}
+
+function calculateOrthogonalPoints(p1, p2) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    
+    // Вертикальное соединение
+    if (absDx < 20) {
+        return [
+            { x: p1.x, y: p1.y },
+            { x: p1.x, y: p2.y }
+        ];
+    }
+    
+    // Горизонтальное соединение
+    if (absDy < 20) {
+        return [
+            { x: p1.x, y: p1.y },
+            { x: p2.x, y: p1.y }
+        ];
+    }
+    
+    const offset = 30;
+    const dirX = dx > 0 ? 1 : -1;
+    const dirY = dy > 0 ? 1 : -1;
+    
+    // Г-образное соединение
+    if (absDx > absDy * 1.5) {
+        const midX = p1.x + (dx / 2);
+        return [
+            { x: p1.x, y: p1.y },
+            { x: midX, y: p1.y },
+            { x: midX, y: p2.y },
+            { x: p2.x, y: p2.y }
+        ];
+    }
+    
+    if (absDy > absDx * 1.5) {
+        const midY = p1.y + (dy / 2);
+        return [
+            { x: p1.x, y: p1.y },
+            { x: p1.x, y: midY },
+            { x: p2.x, y: midY },
+            { x: p2.x, y: p2.y }
+        ];
+    }
+    
+    // Z-образное соединение
+    return [
+        { x: p1.x, y: p1.y },
+        { x: p1.x + (offset * dirX), y: p1.y },
+        { x: p1.x + (offset * dirX), y: p2.y - (offset * dirY) },
+        { x: p2.x - (offset * dirX), y: p2.y - (offset * dirY) },
+        { x: p2.x - (offset * dirX), y: p2.y },
+        { x: p2.x, y: p2.y }
+    ];
 }
 
 function getComponentCenter(obj) {
@@ -493,23 +802,24 @@ function getComponentCenter(obj) {
 }
 
 function updateConnectionsForObject(obj) {
+    if (!chipCanvas) return;
+    
     chipConnections.forEach(conn => {
         if (conn.obj1 === obj || conn.obj2 === obj) {
             const center1 = getComponentCenter(conn.obj1);
             const center2 = getComponentCenter(conn.obj2);
             
+            const points = calculateOrthogonalPoints(center1, center2);
+            
             conn.line.set({
-                x1: center1.x,
-                y1: center1.y,
-                x2: center2.x,
-                y2: center2.y
+                points: points.map(p => new fabric.Point(p.x, p.y))
             });
             conn.line.setCoords();
+            conn.points = points;
         }
     });
     chipCanvas.renderAll();
 }
-
 function clearSelection() {
     chipCanvas.discardActiveObject();
     chipCanvas.renderAll();
@@ -557,26 +867,71 @@ function applyZoom() {
     chipCanvas.renderAll();
 }
 
-function saveChipProject() {
 
-    
-    const projectName = prompt('Введите название проекта:', 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ===== СОХРАНЕНИЕ ПРОЕКТА =====
+
+async function saveChipProject() {
+    if (!chipCanvas) return;
+
+    if (!projectName) {
+        projectName = prompt('Введите название проекта:', 
         currentProjectData?.name || `Микрочип ${new Date().toLocaleDateString('ru-RU')}`);
     
-    if (!projectName || projectName.trim() === '') {
-        return;
+        if (!projectName || projectName.trim() === '') {
+            return;
     }
+    };
     
-    // Собираем данные проекта
     const components = chipCanvas.getObjects()
-        .filter(obj => obj.componentType)
+        .filter(obj => obj.componentType === 'component')
         .map(obj => ({
             id: obj.id,
-            type: obj.componentType,
+            componentId: obj.componentId,
+            title: obj.title,
+            ico: obj.ico,
             left: obj.left,
             top: obj.top,
-            width: obj.width,
-            height: obj.height,
             scaleX: obj.scaleX,
             scaleY: obj.scaleY
         }));
@@ -588,7 +943,8 @@ function saveChipProject() {
     }));
     
     const projectData = {
-        name: projectName.trim(),
+        id: currentProjectId || Date.now().toString(),
+        name: projectName,
         date: new Date().toISOString(),
         components: components,
         connections: connections,
@@ -596,139 +952,213 @@ function saveChipProject() {
         lastModified: new Date().toISOString()
     };
     
-    // Сохраняем в localStorage
-    let users = JSON.parse(localStorage.getItem('users'));
-    if (!users || !users[currentUser]) return;
-    
-    if (currentProjectIndex >= 0) {
-        // Обновляем существующий проект
-        users[currentUser].projects[currentProjectIndex] = projectData;
-    } else {
-        // Добавляем новый проект
-        users[currentUser].projects.push(projectData);
-        currentProjectIndex = users[currentUser].projects.length - 1;
+    console.log('Project saved:', projectData);
+    try {
+        // ✅ ПРАВИЛЬНО: добавляем () и await
+        const result = await eel.save_schema(projectData)();
+        console.log('Save result:', result);
+        
+        if (result && result.status === 'success') {
+            showNotification('✅ Проект сохранен');
+            currentProjectId = result.id || currentProjectId;
+        } else {
+            showNotification('❌ Ошибка сохранения', 'error');
+        }
+        
+    } catch(error) {
+        console.error('Save error:', error);
+        showNotification('❌ Ошибка сохранения', 'error');
     }
     
-    localStorage.setItem('users', JSON.stringify(users));
     
-    document.getElementById('projectNameDisplay').textContent = projectData.name;
-    currentProjectData = projectData;
-    
-    showNotification('Проект сохранен!');
-    updateEditorStatus('Проект сохранен');
 }
 
-function loadChipProject(data) {
-    // Очищаем canvas
-    chipCanvas.clear();
-    chipConnections = [];
-    
-    // Получаем данные проекта (уже не нужно переприсваивать)
-    const projectData = data.list_projects || data;
-    
-    // Восстанавливаем компоненты
-    const componentMap = new Map();
-    
-    if (projectData.objects && Array.isArray(projectData.objects)) {
-        projectData.objects.forEach((compData, index) => {
-            
-            const uniqueCompData = {
-                ...compData,
-                id: compData.id + '_' + index 
-            };
-            
-            const component = createComponentFromData(uniqueCompData);
-            if (component) {
-                componentMap.set(compData.id, component); 
-                chipCanvas.add(component);
-            }
-        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ===== ЗАГРУЗКА ПРОЕКТА ИЗ БД =====
+async function loadChipProject(project) {
+
+    if (!chipCanvas) {
+        console.error('Canvas not initialized');
+        return;
     }
     
-    // Восстанавливаем соединения
-    if (projectData.connections && Array.isArray(projectData.connections)) {
-        projectData.connections.forEach(connData => {
-            // Ищем компоненты по оригинальным id
-            const components = Array.from(componentMap.entries())
-                .filter(([id, comp]) => id === connData.fromObjectId || id === connData.toObjectId);
+    showNotification('Загрузка проекта...', 'info');
+    
+    projectName = project.name;
+    try {
+  
+        
+        // Очищаем canvas
+        chipCanvas.clear();
+        chipConnections = [];
+        
+        // Получаем данные проекта (result.data или сам result)
+        
+        // Обновляем название
+        const nameDisplay = document.getElementById('projectNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = project.name || 'Без названия';
+        
+        // Сохраняем ID проекта
+        currentProjectId = project.id;
+        currentProjectData = project;
+        
+        // Карта для соответствия старых и новых ID компонентов
+        const componentMap = new Map();
+        
+        // Загружаем компоненты
+        if (project.components && Array.isArray(project.components)) {
+            const loadPromises = project.components.map(async (compData) => {
+                try {
+                    // Создаем компонент из данных
+                    const component = await createComponentFromData(compData);
+                    
+                    // Сохраняем в карту
+                    componentMap.set(compData.id, component);
+                    
+                    // Добавляем на canvas
+                    chipCanvas.add(component);
+                    
+                    return component;
+                    
+                } catch (error) {
+                    console.error('Error loading component:', error, compData);
+                    return null;
+                }
+            });
             
-            if (components.length >= 2) {
-                const obj1 = componentMap.get(connData.fromObjectId);
-                const obj2 = componentMap.get(connData.toObjectId);
+            await Promise.all(loadPromises);
+        }
+        
+        // Загружаем соединения
+        if (project.connections && Array.isArray(project.connections)) {
+            project.connections.forEach(connData => {
+                const obj1 = componentMap.get(connData.fromId);
+                const obj2 = componentMap.get(connData.toId);
                 
                 if (obj1 && obj2) {
                     createConnection(obj1, obj2);
+                } else {
+                    console.warn('Connection objects not found:', connData);
                 }
-            }
-        });
+            });
+        }
+        
+        // Восстанавливаем масштаб
+        if (project.zoom) {
+            zoomLevel = project.zoom;
+            applyZoom();
+        }
+        
+        // Обновляем счетчики
+        updateComponentCount();
+        updateConnectionCount();
+        
+        chipCanvas.renderAll();
+        
+        showNotification('Проект загружен');
+        updateEditorStatus(`Проект "${project.name}" загружен`);
+        
+    } catch (error) {
+        console.error('Error loading project:', error);
+        showNotification('❌ Ошибка загрузки проекта', 'error');
     }
-    
-    currentProjectData = projectData;
-    
-    // Правильно отображаем название проекта
-    const projectName = projectData.metadata?.name || projectData.metadata || 'Без названия';
-    document.getElementById('projectNameDisplay').textContent = projectName;
-    
-    updateComponentCount();
-    updateConnectionCount();
-    updateEditorStatus(`Проект "${projectName}" загружен`);
 }
 
 
 function createComponentFromData(data) {
-    const colors = {
-        cpu: '#FF6B6B',
-        gpu: '#4ECDC4',
-        ram: '#FFD166',
-        io: '#06D6A0',
-        cache: '#118AB2'
-    };
-    
-    const labels = {
-        cpu: 'CPU',
-        gpu: 'GPU',
-        ram: 'RAM',
-        io: 'I/O',
-        cache: 'Cache'
-    };
-    
-    const rect = new fabric.Rect({
-        width: data.width || 100,
-        height: data.height || 60,
-        fill: colors[data.type] || '#667eea',
-        stroke: '#ffffff',
-        strokeWidth: 2,
-        rx: 8,
-        ry: 8,
-        shadow: new fabric.Shadow({
-            color: 'rgba(0, 0, 0, 0.3)',
-            blur: 5,
-            offsetX: 0,
-            offsetY: 2
-        })
+    return new Promise((resolve, reject) => {
+        if (!data.ico) {
+            console.warn('Component has no ico:', data);
+            reject(new Error('No image URL'));
+            return;
+        }
+        
+        fabric.Image.fromURL(data.ico, function(img) {
+            try {
+                // Вычисляем масштаб
+                const scaleX = data.scaleX || (60 / img.width);
+                const scaleY = data.scaleY || (60 / img.height);
+                
+                img.set({
+                    left: data.left || 100,
+                    top: data.top || 100,
+                    scaleX: scaleX,
+                    scaleY: scaleY,
+                    rx: 5,
+                    ry: 5,
+                    id: data.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    componentId: data.componentId,
+                    title: data.title,
+                    ico: data.ico,
+                    componentType: 'component',
+                    hasControls: true,
+                    hasBorders: true,
+                    lockRotation: true,
+                    borderColor: '#667eea',
+                    cornerColor: '#667eea',
+                    cornerSize: 8,
+                    transparentCorners: false
+                });
+                
+                // Добавляем обработчики
+                img.on('moving', function() {
+                    constrainObject(img);
+                    updateConnectionsForObject(img);
+                });
+                
+                img.on('scaling', function() {
+                    constrainObject(img);
+                    updateConnectionsForObject(img);
+                });
+                
+                resolve(img);
+                
+            } catch (error) {
+                console.error('Error setting image properties:', error);
+                reject(error);
+            }
+            
+        }, function(error) {
+            console.error('Error loading image:', error, data.ico);
+            reject(error);
+            
+        }, {
+            crossOrigin: 'anonymous'
+        });
     });
-    
-    const text = new fabric.Text(labels[data.type] || data.type, {
-        fontSize: 16,
-        fill: 'white',
-        fontWeight: 'bold',
-        fontFamily: 'Arial'
-    });
-    
-    const group = new fabric.Group([rect, text], {
-        left: data.left || 100,
-        top: data.top || 100,
-        hasControls: true,
-        hasBorders: true,
-        lockRotation: true,
-        componentType: data.type,
-        id: data.id || `comp_${Date.now()}`,
-        scaleX: data.scaleX || 1,
-        scaleY: data.scaleY || 1
-    });
-    
-    return group;
 }
+
 
 function exportAsPNG() {
     const link = document.createElement('a');
@@ -848,6 +1278,23 @@ function handleEditorHotkeys(e) {
         e.preventDefault();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ =====
 
