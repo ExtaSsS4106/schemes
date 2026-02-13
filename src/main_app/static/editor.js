@@ -10,24 +10,21 @@ let currentProjectId = null;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up event listeners');
     
-    // Получаем текущего пользователя
     currentUser = localStorage.getItem('currentUser');
     
-    // Получаем ID проекта из URL
     const urlParams = new URLSearchParams(window.location.search);
     currentProjectId = urlParams.get('project_id');
     
     console.log('Current user:', currentUser);
     console.log('Current project ID:', currentProjectId);
     
-    // Инициализируем редактор
     initChipEditor();
     
     // Кнопки редактора
     const saveChipBtn = document.getElementById('saveChipBtn');
     if (saveChipBtn) saveChipBtn.addEventListener('click', saveChipProject);
     
-    // Кнопки инструментов редактора - ИСПРАВЛЕНО для работы с картинками
+    // Кнопки компонентов
     document.querySelectorAll('.component-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -38,12 +35,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const ico = btn.getAttribute('data-ico');
             const title = btn.getAttribute('data-title') || id;
             
-            console.log('Adding component:', {id, title, ico});
-            
             if (ico) {
                 addChipComponent(id, ico, title);
             } else {
-                // Fallback на старый метод если нет иконки
                 addChipComponentFallback(id);
             }
         });
@@ -90,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Горячие клавиши
     document.addEventListener('keydown', handleEditorHotkeys);
 });
 
@@ -146,21 +139,19 @@ function setupCanvasEvents() {
     if (!chipCanvas) return;
     
     chipCanvas.on('object:moving', function(e) {
-        updateConnectionsForObject(e.target);
+        if (e.target.type === 'image' || e.target.componentType === 'component') {
+            updateConnectionsForObject(e.target);
+        }
     });
     
     chipCanvas.on('object:scaling', function(e) {
-        updateConnectionsForObject(e.target);
+        if (e.target.type === 'image' || e.target.componentType === 'component') {
+            updateConnectionsForObject(e.target);
+        }
     });
     
-    chipCanvas.on('selection:created', function() {
-        updateEditorStatus();
-    });
-    
-    chipCanvas.on('selection:cleared', function() {
-        updateEditorStatus();
-    });
-    
+    chipCanvas.on('selection:created', updateEditorStatus);
+    chipCanvas.on('selection:cleared', updateEditorStatus);
     chipCanvas.on('object:added', updateComponentCount);
     chipCanvas.on('object:removed', updateComponentCount);
     
@@ -184,7 +175,8 @@ function updateCanvasSize() {
     }
 }
 
-// ===== ОСНОВНАЯ ФУНКЦИЯ ДОБАВЛЕНИЯ КОМПОНЕНТА С КАРТИНКОЙ =====
+// ===== ДОБАВЛЕНИЕ КОМПОНЕНТОВ =====
+
 function addChipComponent(id, ico, title) {
     if (!chipCanvas) return;
     
@@ -216,40 +208,13 @@ function addChipComponent(id, ico, title) {
             transparentCorners: false
         });
         
-        // Ограничение перемещения в пределах холста
+        // Ограничение перемещения
         img.on('moving', function() {
-            const canvasWidth = chipCanvas.getWidth();
-            const canvasHeight = chipCanvas.getHeight();
-            const objWidth = img.getScaledWidth();
-            const objHeight = img.getScaledHeight();
-            
-            if (img.left < 0) img.set('left', 0);
-            if (img.top < 0) img.set('top', 0);
-            if (img.left + objWidth > canvasWidth) {
-                img.set('left', canvasWidth - objWidth);
-            }
-            if (img.top + objHeight > canvasHeight) {
-                img.set('top', canvasHeight - objHeight);
-            }
-            img.setCoords();
+            constrainObject(img);
         });
         
-        // Ограничение при масштабировании
         img.on('scaling', function() {
-            const canvasWidth = chipCanvas.getWidth();
-            const canvasHeight = chipCanvas.getHeight();
-            const objWidth = img.getScaledWidth();
-            const objHeight = img.getScaledHeight();
-            
-            if (img.left < 0) img.set('left', 0);
-            if (img.top < 0) img.set('top', 0);
-            if (img.left + objWidth > canvasWidth) {
-                img.set('left', canvasWidth - objWidth);
-            }
-            if (img.top + objHeight > canvasHeight) {
-                img.set('top', canvasHeight - objHeight);
-            }
-            img.setCoords();
+            constrainObject(img);
         });
         
         chipCanvas.add(img);
@@ -263,7 +228,25 @@ function addChipComponent(id, ico, title) {
     });
 }
 
-// ===== ФУНКЦИЯ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ (КВАДРАТЫ) =====
+function constrainObject(obj) {
+    if (!chipCanvas) return;
+    
+    const canvasWidth = chipCanvas.getWidth();
+    const canvasHeight = chipCanvas.getHeight();
+    const objWidth = obj.getScaledWidth();
+    const objHeight = obj.getScaledHeight();
+    
+    if (obj.left < 0) obj.set('left', 0);
+    if (obj.top < 0) obj.set('top', 0);
+    if (obj.left + objWidth > canvasWidth) {
+        obj.set('left', canvasWidth - objWidth);
+    }
+    if (obj.top + objHeight > canvasHeight) {
+        obj.set('top', canvasHeight - objHeight);
+    }
+    obj.setCoords();
+}
+
 function addChipComponentFallback(type) {
     if (!chipCanvas) return;
     
@@ -326,7 +309,6 @@ function addChipComponentFallback(type) {
     updateComponentCount();
 }
 
-// ===== ФУНКЦИЯ СОЗДАНИЯ КОМПОНЕНТА ИЗ СОХРАНЕННЫХ ДАННЫХ =====
 function createComponentFromData(data) {
     return new Promise((resolve) => {
         fabric.Image.fromURL(data.ico, function(img) {
@@ -351,40 +333,12 @@ function createComponentFromData(data) {
                 transparentCorners: false
             });
             
-            // Добавляем обработчик перемещения
             img.on('moving', function() {
-                const canvasWidth = chipCanvas.getWidth();
-                const canvasHeight = chipCanvas.getHeight();
-                const objWidth = img.getScaledWidth();
-                const objHeight = img.getScaledHeight();
-                
-                if (img.left < 0) img.set('left', 0);
-                if (img.top < 0) img.set('top', 0);
-                if (img.left + objWidth > canvasWidth) {
-                    img.set('left', canvasWidth - objWidth);
-                }
-                if (img.top + objHeight > canvasHeight) {
-                    img.set('top', canvasHeight - objHeight);
-                }
-                img.setCoords();
+                constrainObject(img);
             });
             
-            // Добавляем обработчик масштабирования
             img.on('scaling', function() {
-                const canvasWidth = chipCanvas.getWidth();
-                const canvasHeight = chipCanvas.getHeight();
-                const objWidth = img.getScaledWidth();
-                const objHeight = img.getScaledHeight();
-                
-                if (img.left < 0) img.set('left', 0);
-                if (img.top < 0) img.set('top', 0);
-                if (img.left + objWidth > canvasWidth) {
-                    img.set('left', canvasWidth - objWidth);
-                }
-                if (img.top + objHeight > canvasHeight) {
-                    img.set('top', canvasHeight - objHeight);
-                }
-                img.setCoords();
+                constrainObject(img);
             });
             
             resolve(img);
@@ -393,6 +347,8 @@ function createComponentFromData(data) {
         });
     });
 }
+
+// ===== СОЕДИНЕНИЯ С ПРЯМЫМИ УГЛАМИ =====
 
 function connectSelected() {
     if (!chipCanvas) return;
@@ -403,11 +359,22 @@ function connectSelected() {
         const obj1 = activeObjects[0];
         const obj2 = activeObjects[1];
         
+        // Проверяем, не соединены ли уже
+        const alreadyConnected = chipConnections.some(conn => 
+            (conn.obj1 === obj1 && conn.obj2 === obj2) || 
+            (conn.obj1 === obj2 && conn.obj2 === obj1)
+        );
+        
+        if (alreadyConnected) {
+            updateEditorStatus('Компоненты уже соединены');
+            return;
+        }
+        
         if (obj1.componentType && obj2.componentType) {
             createConnection(obj1, obj2);
             updateEditorStatus('Компоненты соединены');
         } else {
-            updateEditorStatus('Выберите два компонента микрочипа');
+            updateEditorStatus('Выберите два компонента');
         }
     } else {
         updateEditorStatus('Выберите два компонента для соединения');
@@ -420,19 +387,28 @@ function createConnection(obj1, obj2) {
     const center1 = getComponentCenter(obj1);
     const center2 = getComponentCenter(obj2);
     
-    const line = new fabric.Line([center1.x, center1.y, center2.x, center2.y], {
-        stroke: '#171718',
-        strokeWidth: 2,
+    const points = calculateOrthogonalPoints(center1, center2);
+    
+    const line = new fabric.Polyline(points, {
+        stroke: '#2563eb',
+        strokeWidth: 2.5,
         fill: '',
         selectable: false,
         evented: false,
         hasControls: false,
         hasBorders: false,
         class: 'connection-line',
-        id: `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        id: `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        strokeLineCap: 'round',
+        strokeLineJoin: 'round',
+        objectCaching: false,
+        perPixelTargetFind: false
     });
     
+    // Сохраняем связанные объекты
     line.connectedObjects = [obj1, obj2];
+    line.obj1Id = obj1.id;
+    line.obj2Id = obj2.id;
     
     chipCanvas.add(line);
     chipCanvas.sendToBack(line);
@@ -440,11 +416,70 @@ function createConnection(obj1, obj2) {
     chipConnections.push({
         line: line,
         obj1: obj1,
-        obj2: obj2
+        obj2: obj2,
+        points: points
     });
     
     updateConnectionCount();
     chipCanvas.renderAll();
+}
+
+function calculateOrthogonalPoints(p1, p2) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    
+    // Вертикальное соединение
+    if (absDx < 20) {
+        return [
+            { x: p1.x, y: p1.y },
+            { x: p1.x, y: p2.y }
+        ];
+    }
+    
+    // Горизонтальное соединение
+    if (absDy < 20) {
+        return [
+            { x: p1.x, y: p1.y },
+            { x: p2.x, y: p1.y }
+        ];
+    }
+    
+    const offset = 30;
+    const dirX = dx > 0 ? 1 : -1;
+    const dirY = dy > 0 ? 1 : -1;
+    
+    // Г-образное соединение
+    if (absDx > absDy * 1.5) {
+        const midX = p1.x + (dx / 2);
+        return [
+            { x: p1.x, y: p1.y },
+            { x: midX, y: p1.y },
+            { x: midX, y: p2.y },
+            { x: p2.x, y: p2.y }
+        ];
+    }
+    
+    if (absDy > absDx * 1.5) {
+        const midY = p1.y + (dy / 2);
+        return [
+            { x: p1.x, y: p1.y },
+            { x: p1.x, y: midY },
+            { x: p2.x, y: midY },
+            { x: p2.x, y: p2.y }
+        ];
+    }
+    
+    // Z-образное соединение
+    return [
+        { x: p1.x, y: p1.y },
+        { x: p1.x + (offset * dirX), y: p1.y },
+        { x: p1.x + (offset * dirX), y: p2.y - (offset * dirY) },
+        { x: p2.x - (offset * dirX), y: p2.y - (offset * dirY) },
+        { x: p2.x - (offset * dirX), y: p2.y },
+        { x: p2.x, y: p2.y }
+    ];
 }
 
 function getComponentCenter(obj) {
@@ -463,17 +498,19 @@ function updateConnectionsForObject(obj) {
             const center1 = getComponentCenter(conn.obj1);
             const center2 = getComponentCenter(conn.obj2);
             
+            const points = calculateOrthogonalPoints(center1, center2);
+            
             conn.line.set({
-                x1: center1.x,
-                y1: center1.y,
-                x2: center2.x,
-                y2: center2.y
+                points: points.map(p => new fabric.Point(p.x, p.y))
             });
             conn.line.setCoords();
+            conn.points = points;
         }
     });
     chipCanvas.renderAll();
 }
+
+// ===== УПРАВЛЕНИЕ =====
 
 function clearSelection() {
     if (!chipCanvas) return;
@@ -510,6 +547,8 @@ function deleteObject(obj) {
     updateEditorStatus('Объект удален');
 }
 
+// ===== МАСШТАБ =====
+
 function zoomIn() {
     zoomLevel = Math.min(zoomLevel + 0.1, 3);
     applyZoom();
@@ -530,7 +569,8 @@ function applyZoom() {
     chipCanvas.renderAll();
 }
 
-// ===== СОХРАНЕНИЕ ПРОЕКТА С КАРТИНКАМИ =====
+// ===== СОХРАНЕНИЕ И ЗАГРУЗКА =====
+
 function saveChipProject() {
     if (!chipCanvas) return;
     
@@ -600,7 +640,6 @@ function saveChipProject() {
     updateEditorStatus('Проект сохранен');
 }
 
-// ===== ЗАГРУЗКА ПРОЕКТА С КАРТИНКАМИ =====
 async function loadChipProject(projectId) {
     if (!chipCanvas) return;
     
@@ -663,6 +702,8 @@ async function loadChipProject(projectId) {
     chipCanvas.renderAll();
 }
 
+// ===== ЭКСПОРТ =====
+
 function exportAsPNG() {
     if (!chipCanvas) return;
     
@@ -674,9 +715,7 @@ function exportAsPNG() {
         quality: 1,
         multiplier: 2
     });
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
     
     updateEditorStatus('Экспортировано как PNG');
 }
@@ -711,12 +750,12 @@ function exportAsJSON() {
     const projectName = currentProjectData?.name || 'microchip_design';
     link.download = `${projectName.replace(/\s+/g, '_')}.json`;
     link.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(jsonStr);
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
     
     updateEditorStatus('Экспортировано как JSON');
 }
+
+// ===== СЧЕТЧИКИ И СТАТУС =====
 
 function updateComponentCount() {
     if (!chipCanvas) return;
@@ -787,7 +826,7 @@ function handleEditorHotkeys(e) {
     }
 }
 
-// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+// ===== УВЕДОМЛЕНИЯ =====
 
 function showNotification(message, type = 'success') {
     console.log('Notification:', message);
