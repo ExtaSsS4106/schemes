@@ -9,8 +9,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-
-<div class="screen active" id="editor">
+{% csrf_token %}
+<div class="screen active" id="editor" data-id="{{schema.id}}"
+data-title="{{schema.title}}"
+>
     <div class="editor-container">
         <!-- Панель инструментов -->
         <div class="editor-tools">
@@ -62,7 +64,7 @@
             
             <div class="current-project-info">
                 <h3><i class="fas fa-info-circle"></i> Текущий проект</h3>
-                <div id="projectNameDisplay">Новый микрочип</div>
+                <div id="projectNameDisplay">{{schema.title}}</div>
                 <div class="project-stats">
                     <span>Компоненты: <span id="compCount">0</span></span>
                     <span>Соединения: <span id="connCount">0</span></span>

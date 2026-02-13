@@ -1,5 +1,4 @@
 // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
-let currentUser = null;
 let chipCanvas = null;
 let chipConnections = [];
 let currentProjectData = null;
@@ -10,14 +9,13 @@ let currentProjectId = null;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up event listeners');
     
-    currentUser = localStorage.getItem('currentUser');
+    // Получаем ID проекта из data-атрибута
+    const editorScreen = document.getElementById('editor');
+    currentProjectId = editorScreen?.getAttribute('data-id');
     
-    const urlParams = new URLSearchParams(window.location.search);
-    currentProjectId = urlParams.get('project_id');
-    
-    console.log('Current user:', currentUser);
     console.log('Current project ID:', currentProjectId);
     
+    // Инициализируем редактор
     initChipEditor();
     
     // Кнопки редактора
@@ -31,14 +29,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             
             const btn = e.currentTarget;
-            const id = btn.getAttribute('data-type') || btn.getAttribute('data-id');
+            const id = btn.getAttribute('data-type');
             const ico = btn.getAttribute('data-ico');
-            const title = btn.getAttribute('data-title') || id;
+            const title = btn.getAttribute('data-title');
+            
+            console.log('Adding component:', {id, title, ico});
             
             if (ico) {
                 addChipComponent(id, ico, title);
-            } else {
-                addChipComponentFallback(id);
             }
         });
     });
@@ -84,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Горячие клавиши
     document.addEventListener('keydown', handleEditorHotkeys);
 });
 
@@ -103,7 +102,7 @@ function initChipEditor() {
             width: container.clientWidth,
             height: container.clientHeight,
             backgroundColor: '#fafafa',
-            selectionColor: 'rgba(102, 126, 234, 0.3)',
+            selectionColor: 'rgba(102, 126, 234, 0.33)',
             selectionBorderColor: '#667eea',
             selectionLineWidth: 2
         });
@@ -114,24 +113,19 @@ function initChipEditor() {
         window.addEventListener('resize', updateCanvasSize);
     }
     
-    if (currentProjectId) {
-        loadChipProject(currentProjectId);
-    } else {
-        chipCanvas.clear();
-        chipConnections = [];
-        currentProjectData = {
-            id: Date.now().toString(),
-            name: `Микрочип ${new Date().toLocaleDateString('ru-RU')}`,
-            date: new Date().toISOString(),
-            components: [],
-            connections: []
-        };
-        const nameDisplay = document.getElementById('projectNameDisplay');
-        if (nameDisplay) nameDisplay.textContent = currentProjectData.name;
-        updateComponentCount();
-        updateConnectionCount();
-    }
+    // Новый проект
+    chipCanvas.clear();
+    chipConnections = [];
+    currentProjectData = {
+        id: currentProjectId || Date.now().toString(),
+        name: document.getElementById('projectNameDisplay')?.textContent || 'Новый проект',
+        date: new Date().toISOString(),
+        components: [],
+        connections: []
+    };
     
+    updateComponentCount();
+    updateConnectionCount();
     updateEditorStatus('Готов к работе');
 }
 
@@ -139,14 +133,16 @@ function setupCanvasEvents() {
     if (!chipCanvas) return;
     
     chipCanvas.on('object:moving', function(e) {
-        if (e.target.type === 'image' || e.target.componentType === 'component') {
+        if (e.target.type === 'image') {
             updateConnectionsForObject(e.target);
+            constrainObject(e.target);
         }
     });
     
     chipCanvas.on('object:scaling', function(e) {
-        if (e.target.type === 'image' || e.target.componentType === 'component') {
+        if (e.target.type === 'image') {
             updateConnectionsForObject(e.target);
+            constrainObject(e.target);
         }
     });
     
@@ -173,6 +169,25 @@ function updateCanvasSize() {
             chipCanvas.renderAll();
         }
     }
+}
+
+function constrainObject(obj) {
+    if (!chipCanvas) return;
+    
+    const canvasWidth = chipCanvas.getWidth();
+    const canvasHeight = chipCanvas.getHeight();
+    const objWidth = obj.getScaledWidth();
+    const objHeight = obj.getScaledHeight();
+    
+    if (obj.left < 0) obj.set('left', 0);
+    if (obj.top < 0) obj.set('top', 0);
+    if (obj.left + objWidth > canvasWidth) {
+        obj.set('left', canvasWidth - objWidth);
+    }
+    if (obj.top + objHeight > canvasHeight) {
+        obj.set('top', canvasHeight - objHeight);
+    }
+    obj.setCoords();
 }
 
 // ===== ДОБАВЛЕНИЕ КОМПОНЕНТОВ =====
@@ -208,7 +223,6 @@ function addChipComponent(id, ico, title) {
             transparentCorners: false
         });
         
-        // Ограничение перемещения
         img.on('moving', function() {
             constrainObject(img);
         });
@@ -225,126 +239,6 @@ function addChipComponent(id, ico, title) {
         updateComponentCount();
     }, null, {
         crossOrigin: 'anonymous'
-    });
-}
-
-function constrainObject(obj) {
-    if (!chipCanvas) return;
-    
-    const canvasWidth = chipCanvas.getWidth();
-    const canvasHeight = chipCanvas.getHeight();
-    const objWidth = obj.getScaledWidth();
-    const objHeight = obj.getScaledHeight();
-    
-    if (obj.left < 0) obj.set('left', 0);
-    if (obj.top < 0) obj.set('top', 0);
-    if (obj.left + objWidth > canvasWidth) {
-        obj.set('left', canvasWidth - objWidth);
-    }
-    if (obj.top + objHeight > canvasHeight) {
-        obj.set('top', canvasHeight - objHeight);
-    }
-    obj.setCoords();
-}
-
-function addChipComponentFallback(type) {
-    if (!chipCanvas) return;
-    
-    const colors = {
-        cpu: '#FF6B6B',
-        gpu: '#4ECDC4',
-        ram: '#FFD166',
-        io: '#06D6A0',
-        cache: '#118AB2'
-    };
-    
-    const labels = {
-        cpu: 'CPU',
-        gpu: 'GPU',
-        ram: 'RAM',
-        io: 'I/O',
-        cache: 'Cache'
-    };
-    
-    const rect = new fabric.Rect({
-        width: 100,
-        height: 60,
-        fill: colors[type] || '#667eea',
-        stroke: '#ffffff',
-        strokeWidth: 2,
-        rx: 8,
-        ry: 8,
-        shadow: new fabric.Shadow({
-            color: 'rgba(0, 0, 0, 0.3)',
-            blur: 5,
-            offsetX: 0,
-            offsetY: 2
-        })
-    });
-    
-    const text = new fabric.Text(labels[type] || type, {
-        fontSize: 16,
-        fill: 'white',
-        fontWeight: 'bold',
-        fontFamily: 'Arial',
-        originX: 'center',
-        originY: 'center'
-    });
-    
-    const group = new fabric.Group([rect, text], {
-        left: 100 + Math.random() * 400,
-        top: 100 + Math.random() * 200,
-        hasControls: true,
-        hasBorders: true,
-        lockRotation: true,
-        componentType: type,
-        id: `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    });
-    
-    chipCanvas.add(group);
-    chipCanvas.setActiveObject(group);
-    chipCanvas.renderAll();
-    
-    updateEditorStatus(`Добавлен ${labels[type]}`);
-    updateComponentCount();
-}
-
-function createComponentFromData(data) {
-    return new Promise((resolve) => {
-        fabric.Image.fromURL(data.ico, function(img) {
-            img.set({
-                left: data.left || 100,
-                top: data.top || 100,
-                scaleX: data.scaleX || (60 / img.width),
-                scaleY: data.scaleY || (60 / img.height),
-                rx: 5,
-                ry: 5,
-                id: data.id || `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                componentId: data.componentId,
-                title: data.title,
-                ico: data.ico,
-                componentType: 'component',
-                hasControls: true,
-                hasBorders: true,
-                lockRotation: true,
-                borderColor: '#667eea',
-                cornerColor: '#667eea',
-                cornerSize: 8,
-                transparentCorners: false
-            });
-            
-            img.on('moving', function() {
-                constrainObject(img);
-            });
-            
-            img.on('scaling', function() {
-                constrainObject(img);
-            });
-            
-            resolve(img);
-        }, null, {
-            crossOrigin: 'anonymous'
-        });
     });
 }
 
@@ -401,11 +295,9 @@ function createConnection(obj1, obj2) {
         id: `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         strokeLineCap: 'round',
         strokeLineJoin: 'round',
-        objectCaching: false,
-        perPixelTargetFind: false
+        objectCaching: false
     });
     
-    // Сохраняем связанные объекты
     line.connectedObjects = [obj1, obj2];
     line.obj1Id = obj1.id;
     line.obj2Id = obj2.id;
@@ -446,12 +338,8 @@ function calculateOrthogonalPoints(p1, p2) {
         ];
     }
     
-    const offset = 30;
-    const dirX = dx > 0 ? 1 : -1;
-    const dirY = dy > 0 ? 1 : -1;
-    
     // Г-образное соединение
-    if (absDx > absDy * 1.5) {
+    if (absDx > absDy) {
         const midX = p1.x + (dx / 2);
         return [
             { x: p1.x, y: p1.y },
@@ -459,9 +347,7 @@ function calculateOrthogonalPoints(p1, p2) {
             { x: midX, y: p2.y },
             { x: p2.x, y: p2.y }
         ];
-    }
-    
-    if (absDy > absDx * 1.5) {
+    } else {
         const midY = p1.y + (dy / 2);
         return [
             { x: p1.x, y: p1.y },
@@ -470,16 +356,6 @@ function calculateOrthogonalPoints(p1, p2) {
             { x: p2.x, y: p2.y }
         ];
     }
-    
-    // Z-образное соединение
-    return [
-        { x: p1.x, y: p1.y },
-        { x: p1.x + (offset * dirX), y: p1.y },
-        { x: p1.x + (offset * dirX), y: p2.y - (offset * dirY) },
-        { x: p2.x - (offset * dirX), y: p2.y - (offset * dirY) },
-        { x: p2.x - (offset * dirX), y: p2.y },
-        { x: p2.x, y: p2.y }
-    ];
 }
 
 function getComponentCenter(obj) {
@@ -569,22 +445,10 @@ function applyZoom() {
     chipCanvas.renderAll();
 }
 
-// ===== СОХРАНЕНИЕ И ЗАГРУЗКА =====
+// ===== СОХРАНЕНИЕ =====
 
 function saveChipProject() {
     if (!chipCanvas) return;
-    
-    if (!currentUser) {
-        showNotification('Войдите в систему для сохранения проектов', 'error');
-        return;
-    }
-    
-    const projectName = prompt('Введите название проекта:', 
-        currentProjectData?.name || `Микрочип ${new Date().toLocaleDateString('ru-RU')}`);
-    
-    if (!projectName || projectName.trim() === '') {
-        return;
-    }
     
     const components = chipCanvas.getObjects()
         .filter(obj => obj.componentType === 'component')
@@ -606,8 +470,8 @@ function saveChipProject() {
     }));
     
     const projectData = {
-        id: currentProjectData?.id || Date.now().toString(),
-        name: projectName.trim(),
+        id: currentProjectId || Date.now().toString(),
+        name: document.getElementById('projectNameDisplay')?.textContent || 'Новый проект',
         date: new Date().toISOString(),
         components: components,
         connections: connections,
@@ -615,91 +479,10 @@ function saveChipProject() {
         lastModified: new Date().toISOString()
     };
     
-    let users = JSON.parse(localStorage.getItem('users')) || {};
-    if (!users[currentUser]) {
-        users[currentUser] = { projects: [] };
-    }
+    console.log('Project saved:', projectData);
+    showNotification('Проект сохранен в консоль (демо-режим)');
     
-    const projectIndex = users[currentUser].projects.findIndex(p => p.id === projectData.id);
-    
-    if (projectIndex >= 0) {
-        users[currentUser].projects[projectIndex] = projectData;
-    } else {
-        users[currentUser].projects.push(projectData);
-        currentProjectId = projectData.id;
-    }
-    
-    localStorage.setItem('users', JSON.stringify(users));
-    
-    const nameDisplay = document.getElementById('projectNameDisplay');
-    if (nameDisplay) nameDisplay.textContent = projectData.name;
-    
-    currentProjectData = projectData;
-    
-    showNotification('Проект сохранен!');
-    updateEditorStatus('Проект сохранен');
-}
-
-async function loadChipProject(projectId) {
-    if (!chipCanvas) return;
-    
-    let users = JSON.parse(localStorage.getItem('users')) || {};
-    if (!users[currentUser]) {
-        console.error('User not found');
-        return;
-    }
-    
-    const projects = users[currentUser].projects;
-    const project = projects.find(p => p.id == projectId);
-    
-    if (!project) {
-        console.error('Project not found:', projectId);
-        return;
-    }
-    
-    chipCanvas.clear();
-    chipConnections = [];
-    
-    const componentMap = new Map();
-    
-    if (project.components && Array.isArray(project.components)) {
-        const loadPromises = project.components.map(compData => 
-            createComponentFromData(compData).then(component => {
-                componentMap.set(compData.id, component);
-                chipCanvas.add(component);
-                return component;
-            })
-        );
-        
-        await Promise.all(loadPromises);
-    }
-    
-    if (project.connections && Array.isArray(project.connections)) {
-        project.connections.forEach(connData => {
-            const obj1 = componentMap.get(connData.fromId);
-            const obj2 = componentMap.get(connData.toId);
-            
-            if (obj1 && obj2) {
-                createConnection(obj1, obj2);
-            }
-        });
-    }
-    
-    if (project.zoom) {
-        zoomLevel = project.zoom;
-        applyZoom();
-    }
-    
-    currentProjectData = project;
-    currentProjectId = project.id;
-    
-    const nameDisplay = document.getElementById('projectNameDisplay');
-    if (nameDisplay) nameDisplay.textContent = project.name || 'Без названия';
-    
-    updateComponentCount();
-    updateConnectionCount();
-    updateEditorStatus(`Проект "${project.name}" загружен`);
-    chipCanvas.renderAll();
+    // TODO: Добавить отправку на сервер
 }
 
 // ===== ЭКСПОРТ =====
@@ -723,26 +506,31 @@ function exportAsPNG() {
 function exportAsJSON() {
     if (!chipCanvas) return;
     
+    const components = chipCanvas.getObjects()
+        .filter(obj => obj.componentType === 'component')
+        .map(obj => ({
+            id: obj.id,
+            componentId: obj.componentId,
+            title: obj.title,
+            ico: obj.ico,
+            left: obj.left,
+            top: obj.top,
+            scaleX: obj.scaleX,
+            scaleY: obj.scaleY
+        }));
+    
+    const connections = chipConnections.map(conn => ({
+        id: conn.line.id,
+        fromId: conn.obj1.id,
+        toId: conn.obj2.id
+    }));
+    
     const projectData = {
-        name: currentProjectData?.name || 'Microchip Design',
+        name: document.getElementById('projectNameDisplay')?.textContent || 'Microchip Design',
         date: new Date().toISOString(),
-        components: chipCanvas.getObjects()
-            .filter(obj => obj.componentType === 'component')
-            .map(obj => ({
-                id: obj.id,
-                componentId: obj.componentId,
-                title: obj.title,
-                ico: obj.ico,
-                left: obj.left,
-                top: obj.top,
-                scaleX: obj.scaleX,
-                scaleY: obj.scaleY
-            })),
-        connections: chipConnections.map(conn => ({
-            id: conn.line.id,
-            fromId: conn.obj1.id,
-            toId: conn.obj2.id
-        }))
+        components: components,
+        connections: connections,
+        zoom: zoomLevel
     };
     
     const jsonStr = JSON.stringify(projectData, null, 2);
@@ -784,7 +572,7 @@ function updateEditorStatus(message) {
     if (selected.length === 0) {
         statusElement.textContent = 'Выберите компонент для редактирования';
     } else if (selected.length === 1) {
-        statusElement.textContent = 'Выбран 1 компонент. Перетаскивайте для перемещения';
+        statusElement.textContent = 'Выбран 1 компонент';
     } else if (selected.length === 2) {
         statusElement.textContent = 'Выбрано 2 компонента. Нажмите "Соединить"';
     } else {
