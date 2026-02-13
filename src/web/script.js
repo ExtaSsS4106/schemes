@@ -9,10 +9,12 @@ let zoomLevel = 1;
 let currentProjectIndex = -1;
 let currentProjectId = null;
 let projectName = null;
+let host = 'http://localhost:8000'; // глобальная переменная
+
+
 
 // ===== ДОБАВЛЯЕМ ЭТУ СТРОЧКУ ДЛЯ ОТЛАДКИ =====
-console.log('Script loaded! Current user:', currentUser);
-
+console.log('Script loaded! Current user:', currentUser, host);
 
 
 
@@ -258,7 +260,7 @@ function showEmptyProjects(grid) {
             <div class="empty-container">
                 <i class="fas fa-folder-open"></i>
                 <h3>Нет проектов</h3>
-                <p>У вас пока нет созданных проектов микрочипов.<br>Создайте свой первый проект!</p>
+                <p>У вас пока нет созданных проектов.<br>Создайте свой первый проект!</p>
                 <button id="createFirstProjectBtn" class="big-create-btn">
                     <i class="fas fa-plus"></i>
                     <span>Создать первый проект</span>
@@ -326,14 +328,7 @@ async function loadProjects() {
                 projectDiv.innerHTML = `
                     <i class="fas fa-microchip project-icon"></i>
                     <h3>${project.title || 'Без названия'}</h3>
-                    <div class="project-controls">
-                        <button class="project-btn rename-btn" data-id="${project.id}" title="Переименовать">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="project-btn delete-btn" data-id="${project.id}" title="Удалить">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
+                    
                 `;
                 
                 // Обработчик клика на проект
@@ -369,7 +364,6 @@ async function loadProjects() {
             addProjectDiv.innerHTML = `
                 <i class="fas fa-plus"></i>
                 <p>Новый проект</p>
-                <p class="add-hint">Добавить микрочип</p>
             `;
             addProjectDiv.addEventListener('click', createNewProject);
             grid.appendChild(addProjectDiv);
@@ -576,10 +570,8 @@ function addChipComponent(id, ico, title) {
         console.error('Canvas not initialized');
         return;
     }
-    
     const left = 100 + Math.random() * 400;
     const top = 100 + Math.random() * 200;
-    
     fabric.Image.fromURL(ico, function(img) {
         // Создаем уникальный ID для компонента
         const componentId = 'comp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -1109,7 +1101,6 @@ function createComponentFromData(data) {
                 // Вычисляем масштаб
                 const scaleX = data.scaleX || (60 / img.width);
                 const scaleY = data.scaleY || (60 / img.height);
-                
                 img.set({
                     left: data.left || 100,
                     top: data.top || 100,
@@ -1301,10 +1292,9 @@ function handleEditorHotkeys(e) {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM loaded, setting up event listeners');
 
-    const components_array = await eel.get_components()();
-
+    const [components_array, fetchedHost] = await eel.get_components()();
     const projectDiv = document.querySelector('.components-elements'); // Добавил точку
-
+    host = fetchedHost;
     if (projectDiv) {
             
             components_array.forEach((ca) => {
@@ -1312,10 +1302,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <button class="tool-btn component-btn" data-type="component"
                         data-id="${ca.id}"
                         data-title="${ca.title}"
-                        data-ico="${ca.ico}"
+                        data-ico="${host}/${ca.ico}"
                     >
                         <div class="component-icon-container">
-                            <img src="${ca.ico}" alt="${ca.title}" class="component-icon">
+                            <img src="${host}/${ca.ico}" alt="${ca.title}" class="component-icon">
                         </div>
                         <span class="component-title">${ca.title}</span>
                     </button>

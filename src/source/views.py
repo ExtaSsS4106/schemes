@@ -2,6 +2,11 @@ from random import randint
 import eel, requests, json
 from .settings import *
 
+
+@eel.expose
+def GET_HOST():
+    return HOST
+
 @eel.expose
 def do_Login(username, passwd):
     print(username, passwd)
@@ -101,7 +106,7 @@ def get_components():
     print(r.status_code)
     print(r.json())
     if r.status_code == 200:
-        return r.json()
+        return r.json(), HOST
     return False
 
 @eel.expose
