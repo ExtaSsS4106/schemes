@@ -20,10 +20,12 @@ def home(request):
 @login_required
 def work_table(request):
     project_id = request.GET.get('project_id')
-    schema = Schemes.objects.get(id=project_id, user=request.user)
     components = Components.objects.all()
-    return render(request, "main/editor.html", {"schema": schema, "components":components})
-
+    if project_id:
+        schema = Schemes.objects.get(id=project_id, user=request.user)
+        
+        return render(request, "main/editor.html", {"schema": schema, "components":components})
+    return render(request, "main/editor.html", {"components":components})
 
 
 @login_required
@@ -59,11 +61,13 @@ def save_schema(request):
             if schema_id:
                 try:
                     schema = Schemes.objects.get(id=schema_id, user=user)
+                    schema.id = schema_id
                     schema.title = schema_title
                     schema.data = dump_json  
                     schema.save()
                 except Schemes.DoesNotExist:
                     schema = Schemes.objects.create(
+                        id = schema_id,
                         user=user,
                         title=schema_title,
                         data=dump_json

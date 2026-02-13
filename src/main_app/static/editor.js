@@ -4,7 +4,7 @@ let chipConnections = [];
 let currentProjectData = null;
 let zoomLevel = 1;
 let currentProjectId = null;
-
+let projectName = document.getElementById('editor').getAttribute('data-title');
 // ===== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up event listeners');
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const backToProjectsBtn = document.getElementById('backToProjectsBtn');
     if (backToProjectsBtn) {
         backToProjectsBtn.addEventListener('click', () => {
-            window.location.href = '/';
+            window.location.href = '/home';
         });
     }
     
@@ -200,6 +200,34 @@ function constrainObject(obj) {
     obj.setCoords();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ===== ДОБАВЛЕНИЕ КОМПОНЕНТОВ =====
 
 function addChipComponent(id, ico, title) {
@@ -251,6 +279,31 @@ function addChipComponent(id, ico, title) {
         crossOrigin: 'anonymous'
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ===== СОЕДИНЕНИЯ С ПРЯМЫМИ УГЛАМИ =====
 
@@ -455,10 +508,43 @@ function applyZoom() {
     chipCanvas.renderAll();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ===== СОХРАНЕНИЕ =====
 
 async function saveChipProject() {
     if (!chipCanvas) return;
+
+    if (!document.getElementById('editor').getAttribute('data-title')) {
+        projectName = prompt('Введите название проекта:', 
+        currentProjectData?.name || `Микрочип ${new Date().toLocaleDateString('ru-RU')}`);
+    
+        if (!projectName || projectName.trim() === '') {
+            return;
+    }
+    };
     
     const components = chipCanvas.getObjects()
         .filter(obj => obj.componentType === 'component')
@@ -481,7 +567,7 @@ async function saveChipProject() {
     
     const projectData = {
         id: currentProjectId || Date.now().toString(),
-        name: document.getElementById('projectNameDisplay')?.textContent || 'Новый проект',
+        name: projectName,
         date: new Date().toISOString(),
         components: components,
         connections: connections,

@@ -164,36 +164,11 @@ function logout() {
 
 // ===== УПРАВЛЕНИЕ ПРОЕКТАМИ =====
 
-function showEmptyProjects(grid) {
-    grid.innerHTML = `
-        <div class="empty-projects">
-            <div class="empty-container">
-                <i class="fas fa-folder-open"></i>
-                <h3>Нет проектов</h3>
-                <p>У вас пока нет созданных проектов микрочипов.<br>Создайте свой первый проект!</p>
-                <button id="createFirstProjectBtn" class="big-create-btn">
-                    <i class="fas fa-plus"></i>
-                    <span>Создать первый проект</span>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Добавляем обработчик для кнопки создания проекта
-    const createBtn = document.getElementById('createFirstProjectBtn');
-    if (createBtn) {
-        createBtn.addEventListener('click', createNewProject);
-    }
-}
 
 
 
-function createNewProject() {
-    console.log('Creating new project');
-    currentProjectIndex = -1;
-    currentProjectData = null;
-    showScreen('editor');
-}
+
+
 
 async function openProject(projectId) {
     console.log('Opening project:', projectId);

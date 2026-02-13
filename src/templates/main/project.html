@@ -29,7 +29,7 @@
                                 <i class="fas fa-folder-open"></i>
                                 <h3>Нет проектов</h3>
                                 <p>У вас пока нет созданных проектов микрочипов.<br>Создайте свой первый проект!</p>
-                                <button id="createFirstProjectBtn" class="big-create-btn">
+                                <button id="createFirstProjectBtn" class="big-create-btn" onclick="window.location.href = `/work_table`">
                                     <i class="fas fa-plus"></i>
                                     <span>Создать первый проект</span>
                                 </button>
@@ -53,11 +53,12 @@
                     </div>
                     
                 {% endfor %}
+                        <div class="project add" onclick="window.location.href = `/work_table`">
+                            <i class="fas fa-plus"></i>
+                            <p>Новый проект</p>
+                        </div>
             {% endif %}
-            <div class="project add">
-                <i class="fas fa-plus"></i>
-                <p>Новый проект</p>
-            </div>
+
         </div>
         
         <div class="logout-container">
